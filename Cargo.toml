@@ -1,0 +1,21 @@
+cargo-features = ["edition"]
+
+[package]
+name = "noracle"
+version = "0.1.0"
+edition = '2018'
+authors = ["Zelda Hessler <zelda.hessler@gmail.com>"]
+
+[dependencies]
+actix = "0.7"
+actix-web = "^0.7"
+bytes = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
+env_logger = "*"
+futures = "0.1"
+json = "*"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+uuid = { version = "0.6", features = ["v4", "serde"] }
+csv = "1"
