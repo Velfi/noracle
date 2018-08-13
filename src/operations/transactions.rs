@@ -1,5 +1,5 @@
 use crate::chrono::naive::NaiveDateTime;
-use crate::diesel::{self, RunQueryDsl, SqliteConnection};
+use crate::diesel::{self, RunQueryDsl, QueryDsl, SqliteConnection};
 use crate::models::{NewTransaction, Transaction};
 use crate::schema;
 
@@ -20,12 +20,16 @@ pub fn create_transaction(
         .execute(conn)
 }
 
-pub fn delete_transaction() {
-    unimplemented!()
+pub fn delete_transaction(
+    conn: &SqliteConnection,
+    transaction_id: &i32,
+) -> Result<usize, diesel::result::Error> {
+    diesel::delete(schema::transactions::table.find(transaction_id))
+        .execute(conn)
 }
 
-pub fn get_transaction() {
-    unimplemented!()
+pub fn get_transaction(conn: &SqliteConnection, transaction_id: &i32) -> Result<Vec<Transaction>, diesel::result::Error> {
+    schema::transactions::table.find(transaction_id).load::<Transaction>(conn)
 }
 
 pub fn get_transactions(

@@ -1,5 +1,5 @@
 use crate::chrono::naive::NaiveDateTime;
-use crate::diesel::{self, RunQueryDsl, SqliteConnection};
+use crate::diesel::{self, RunQueryDsl, QueryDsl, SqliteConnection};
 use crate::models::{NewOutcome, Outcome};
 use crate::schema;
 
@@ -22,12 +22,13 @@ pub fn create_outcome(
         .execute(conn)
 }
 
-pub fn delete_outcome() {
-    unimplemented!()
+pub fn delete_outcome(conn: &SqliteConnection, outcome_id: &i32) -> Result<usize, diesel::result::Error> {
+    diesel::delete(schema::outcomes::table.find(outcome_id))
+        .execute(conn)
 }
 
-pub fn get_outcome() {
-    unimplemented!()
+pub fn get_outcome(conn: &SqliteConnection, outcome_id: &i32) -> Result<Vec<Outcome>, diesel::result::Error> {
+    schema::outcomes::table.find(outcome_id).load::<Outcome>(conn)
 }
 
 pub fn get_outcomes(conn: &SqliteConnection) -> Result<Vec<Outcome>, diesel::result::Error> {
