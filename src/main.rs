@@ -96,33 +96,22 @@ fn print_all_data(conn: &SqliteConnection) {
 
     println!("Total Outcomes: {}", outcome_results.len());
     for outcome in outcome_results {
-        println!("Id: {:?}", outcome.id);
-        println!("Title: {}", outcome.title);
-        println!("Description: {:?}", outcome.description);
-        println!("Created on date: {:?}", outcome.creation_date);
-        println!("Resolved on date: {:?}", outcome.resolution_date);
+        println!("{}", outcome);
     }
 
     println!("Total Predictions: {}", prediction_event_results.len());
     for prediction_event in prediction_event_results {
-        println!("Id: {:?}", prediction_event.id);
-        println!("Prediction: {}", prediction_event.prediction);
-        println!("Created on date: {:?}", prediction_event.creation_date);
+        println!("{}", prediction_event);
     }
 
     println!("Total Transactions: {}", transaction_results.len());
     for transaction in transaction_results {
-        println!("Id: {:?}", transaction.id);
-        println!("Occured on date: {}", transaction.date);
-        println!("For amount: {}", transaction.amount);
-        println!("For user with Id: {}", transaction.user_id);
+        println!("{}", transaction);
     }
 
     println!("Total Users: {}", user_results.len());
     for user in user_results {
-        println!("Id: {:?}", user.id);
-        println!("Username: {}", user.username);
-        println!("Display Name: {}", user.display_name);
+        println!("{}", user);
     }
 }
 
