@@ -116,8 +116,14 @@ fn print_all_data(conn: &SqliteConnection) {
 }
 
 fn clear_all_data_in_db(conn: &SqliteConnection) {
-    diesel::delete(schema::outcomes::table).execute(conn).unwrap();
-    diesel::delete(schema::prediction_events::table).execute(conn).unwrap();
-    diesel::delete(schema::transactions::table).execute(conn).unwrap();
+    diesel::delete(schema::outcomes::table)
+        .execute(conn)
+        .unwrap();
+    diesel::delete(schema::prediction_events::table)
+        .execute(conn)
+        .unwrap();
+    diesel::delete(schema::transactions::table)
+        .execute(conn)
+        .unwrap();
     diesel::delete(schema::users::table).execute(conn).unwrap();
 }
