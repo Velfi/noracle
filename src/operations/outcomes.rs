@@ -1,15 +1,15 @@
-use crate::chrono::naive::NaiveDateTime;
-use crate::diesel::{self, RunQueryDsl, QueryDsl, SqliteConnection};
+use chrono::naive::NaiveDateTime;
 use crate::models::{NewOutcome, Outcome};
 use crate::schema;
+use diesel::{self, QueryDsl, QueryResult, RunQueryDsl, SqliteConnection};
 
 pub fn create_outcome(
     conn: &SqliteConnection,
-    title: &str,
-    description: Option<&str>,
-    creation_date: &NaiveDateTime,
-    resolution_date: &NaiveDateTime,
-) -> Result<usize, diesel::result::Error> {
+    title: String,
+    description: Option<String>,
+    creation_date: NaiveDateTime,
+    resolution_date: NaiveDateTime,
+) -> QueryResult<usize> {
     let new_outcome = NewOutcome {
         title,
         description,
@@ -22,15 +22,16 @@ pub fn create_outcome(
         .execute(conn)
 }
 
-pub fn delete_outcome(conn: &SqliteConnection, outcome_id: &i32) -> Result<usize, diesel::result::Error> {
-    diesel::delete(schema::outcomes::table.find(outcome_id))
-        .execute(conn)
+pub fn delete_outcome(conn: &SqliteConnection, outcome_id: i32) -> QueryResult<usize> {
+    diesel::delete(schema::outcomes::table.find(outcome_id)).execute(conn)
 }
 
-pub fn get_outcome(conn: &SqliteConnection, outcome_id: &i32) -> Result<Vec<Outcome>, diesel::result::Error> {
-    schema::outcomes::table.find(outcome_id).load::<Outcome>(conn)
+pub fn get_outcome(conn: &SqliteConnection, outcome_id: i32) -> QueryResult<Vec<Outcome>> {
+    schema::outcomes::table
+        .find(outcome_id)
+        .load::<Outcome>(conn)
 }
 
-pub fn get_outcomes(conn: &SqliteConnection) -> Result<Vec<Outcome>, diesel::result::Error> {
+pub fn get_outcomes(conn: &SqliteConnection) -> QueryResult<Vec<Outcome>> {
     schema::outcomes::table.load::<Outcome>(conn)
 }

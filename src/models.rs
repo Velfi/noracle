@@ -1,8 +1,8 @@
-use crate::chrono::naive::NaiveDateTime;
+use chrono::naive::NaiveDateTime;
 use crate::schema::{outcomes, prediction_events, transactions, users};
 use std::fmt::{self, Display};
 
-#[derive(Debug, Deserialize, Serialize, Queryable)]
+#[derive(Debug, Deserialize, Serialize, Queryable, Clone)]
 pub struct Outcome {
     pub id: Option<i32>,
     pub title: String,
@@ -24,24 +24,24 @@ impl Display for Outcome {
         let outcome_creation = format!("Created on {}", &self.creation_date);
         let outcome_resolution = format!("and resolving on {}", &self.resolution_date);
 
-        write!(
+        writeln!(
             f,
-            "{} -- {}\n{}\n{} {}\n",
+            "{} -- {}\n{}\n{} {}",
             outcome_id, &self.title, outcome_desc, outcome_creation, outcome_resolution
         )
     }
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Deserialize)]
 #[table_name = "outcomes"]
-pub struct NewOutcome<'a> {
-    pub title: &'a str,
-    pub description: Option<&'a str>,
-    pub creation_date: &'a NaiveDateTime,
-    pub resolution_date: &'a NaiveDateTime,
+pub struct NewOutcome {
+    pub title: String,
+    pub description: Option<String>,
+    pub creation_date: NaiveDateTime,
+    pub resolution_date: NaiveDateTime,
 }
 
-#[derive(Debug, Deserialize, Serialize, Queryable)]
+#[derive(Debug, Deserialize, Serialize, Queryable, Clone)]
 pub struct PredictionEvent {
     pub id: Option<i32>,
     pub by_user: i32,
@@ -64,9 +64,9 @@ impl Display for PredictionEvent {
             false => "will not come to pass".to_string(),
         };
 
-        write!(
+        writeln!(
             f,
-            "{} -- {} {}\n{} {}\n",
+            "{} -- {} {}\n{} {}",
             pe_id, pe_user, pe_creation, pe_outcome, pe_resolution
         )
     }
@@ -74,14 +74,14 @@ impl Display for PredictionEvent {
 
 #[derive(Insertable)]
 #[table_name = "prediction_events"]
-pub struct NewPredictionEvent<'a> {
-    pub by_user: &'a i32,
-    pub for_outcome: &'a i32,
-    pub prediction: &'a bool,
-    pub creation_date: &'a NaiveDateTime,
+pub struct NewPredictionEvent {
+    pub by_user: i32,
+    pub for_outcome: i32,
+    pub prediction: bool,
+    pub creation_date: NaiveDateTime,
 }
 
-#[derive(Debug, Deserialize, Serialize, Queryable)]
+#[derive(Debug, Deserialize, Serialize, Queryable, Clone)]
 pub struct Transaction {
     pub id: Option<i32>,
     pub date: NaiveDateTime,
@@ -96,14 +96,14 @@ impl Display for Transaction {
             Some(id) => format!("{}", id).to_string(),
             None => "(No ID)".to_string(),
         };
-        let trans_amount = match &self.amount {
-            amt if amt < &0 => left_pad(&format!("({})", amt * -1), pad_amount),
+        let trans_amount = match self.amount {
+            amt if amt < 0 => left_pad(&format!("({})", amt.wrapping_neg()), pad_amount),
             amt => left_pad(&format!("{} ", amt), pad_amount),
         };
 
-        write!(
+        writeln!(
             f,
-            "U{}-T{}-D{}{}\n",
+            "U{}-T{}-D{}{}",
             &self.user_id,
             trans_id,
             &self.date.date(),
@@ -114,13 +114,13 @@ impl Display for Transaction {
 
 #[derive(Insertable)]
 #[table_name = "transactions"]
-pub struct NewTransaction<'a> {
-    pub user_id: &'a i32,
-    pub amount: &'a i32,
-    pub date: &'a NaiveDateTime,
+pub struct NewTransaction {
+    pub user_id: i32,
+    pub amount: i32,
+    pub date: NaiveDateTime,
 }
 
-#[derive(Debug, Deserialize, Serialize, Queryable)]
+#[derive(Debug, Deserialize, Serialize, Queryable, Clone)]
 pub struct User {
     pub id: Option<i32>,
     pub username: String,
@@ -136,15 +136,15 @@ impl Display for User {
         let padded_username = pad(&self.username, 10);
         let padded_name = left_pad(&format!("\"{}\"", &self.display_name), 15);
 
-        write!(f, "({}) {}  {}\n", &user_id, &padded_username, &padded_name)
+        writeln!(f, "({}) {}  {}", &user_id, &padded_username, &padded_name)
     }
 }
 
 #[derive(Insertable)]
 #[table_name = "users"]
-pub struct NewUser<'a> {
-    pub username: &'a str,
-    pub display_name: &'a str,
+pub struct NewUser {
+    pub username: String,
+    pub display_name: String,
 }
 
 pub fn left_pad(s: &str, pad: usize) -> String {
