@@ -1,5 +1,5 @@
 [package]
-name = "noracle-rocket"
+name = "noracle-warp"
 version = "0.1.0"
 edition = '2018'
 authors = ["Zelda Hessler <zelda.hessler@gmail.com>"]
@@ -13,13 +13,7 @@ env_logger = "*"
 failure = "0.1"
 futures = "0.1"
 json = "*"
-rocket = "0.3"
-rocket_codegen = "0.3"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-
-[dependencies.rocket_contrib]
-version = "*"
-default-features = false
-features = ["json"]
+warp = "0.1"
