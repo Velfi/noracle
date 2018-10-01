@@ -12,22 +12,22 @@ impl Actor for DbExecutor {
     type Context = SyncContext<Self>;
 }
 
-pub struct InitializeDbWithTestData;
+// pub struct InitializeDbWithTestData;
 
-impl Message for InitializeDbWithTestData {
-    type Result = Result<u8, Error>;
-}
+// impl Message for InitializeDbWithTestData {
+//     type Result = Result<u8, Error>;
+// }
 
-impl Handler<InitializeDbWithTestData> for DbExecutor {
-    type Result = Result<u8, Error>;
+// impl Handler<InitializeDbWithTestData> for DbExecutor {
+//     type Result = Result<u8, Error>;
 
-    fn handle(&mut self, _msg: InitializeDbWithTestData, _ctx: &mut Self::Context) -> Self::Result {
-        let conn: &SqliteConnection = &self.0.get().unwrap();
-        crate::debug::initialize_db_with_test_data(conn)?;
+//     fn handle(&mut self, _msg: InitializeDbWithTestData, _ctx: &mut Self::Context) -> Self::Result {
+//         let conn: &SqliteConnection = &self.0.get().unwrap();
+//         crate::debug::initialize_db_with_test_data(conn)?;
 
-        Ok(0)
-    }
-}
+//         Ok(0)
+//     }
+// }
 
 pub struct GetOutcomes;
 
@@ -61,10 +61,10 @@ impl Handler<GetOutcome> for DbExecutor {
     fn handle(&mut self, msg: GetOutcome, _ctx: &mut Self::Context) -> Self::Result {
         let conn: &SqliteConnection = &self.0.get().unwrap();
 
-        let outcome = operations::outcomes::get_outcome(conn, &msg.id).unwrap();
+        let mut outcome = operations::outcomes::get_outcome(conn, msg.id).unwrap();
 
         // Technically, there could be more than 1 outcome with the same ID. This should never happen.
-        Ok(outcome[0].clone())
+        Ok(outcome.pop().unwrap())
     }
 }
 
@@ -87,10 +87,10 @@ impl Handler<CreateOutcome> for DbExecutor {
 
         operations::outcomes::create_outcome(
             conn,
-            &msg.title,
-            msg.description.as_ref().map(String::as_ref),
-            &msg.creation_date,
-            &msg.resolution_date,
+            msg.title,
+            msg.description,
+            msg.creation_date,
+            msg.resolution_date,
         ).unwrap();
 
         Ok(0)
@@ -111,7 +111,7 @@ impl Handler<DeleteOutcome> for DbExecutor {
     fn handle(&mut self, msg: DeleteOutcome, _ctx: &mut Self::Context) -> Self::Result {
         let conn: &SqliteConnection = &self.0.get().unwrap();
 
-        operations::outcomes::delete_outcome(conn, &msg.id).unwrap();
+        operations::outcomes::delete_outcome(conn, msg.id).unwrap();
 
         Ok(())
     }

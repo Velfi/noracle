@@ -1,41 +1,39 @@
 #![feature(nll)]
 #![allow(proc_macro_derive_resolution_fallback)]
-#![feature(plugin)]
-#![plugin(rocket_codegen)]
 
+extern crate actix;
+extern crate actix_web;
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
 extern crate env_logger;
 extern crate json;
-extern crate rocket;
-#[macro_use]
-extern crate rocket_contrib;
 #[macro_use]
 extern crate serde_derive;
+extern crate futures;
 extern crate serde_json;
 
-pub mod models;
 pub mod db;
-pub mod debug;
+pub mod models;
 pub mod operations;
-pub mod routes;
 pub mod schema;
 
+use actix::prelude::*;
+use actix_web::{
+    http, middleware, server, App, AsyncResponder, FutureResponse, HttpResponse, State,
+};
+use crate::db::{DbExecutor, GetOutcomes};
 use diesel::{
-    r2d2::{ConnectionManager, Pool, PooledConnection},
+    r2d2::{ConnectionManager, Pool},
     SqliteConnection,
 };
 use dotenv::dotenv;
-use rocket::http::Status;
-use rocket::request::{self, FromRequest};
-use rocket::{Outcome, State};
+use futures::Future;
 use std::env::{self, VarError};
-use std::ops::Deref;
 
-// struct AppState {
-//     db: Addr<DbExecutor>,
-// }
+struct AppState {
+    db: Addr<DbExecutor>,
+}
 
 #[derive(Clone)]
 struct EnvVars {
@@ -52,30 +50,21 @@ fn main() {
 
     let env_vars = load_env_vars().expect("Failed to load all environment variables");
 
-    let server = rocket::ignite()
-        .manage(init_pool(&env_vars.database_url))
-        .mount(
-            "/api",
-            routes![
-                index,
-                routes::outcomes::delete,
-                routes::outcomes::get_all,
-                routes::outcomes::get_by_id,
-                routes::outcomes::post,
-            ],
-        );
+    let sys = actix::System::new("noracle");
+    let db_pool = init_pool(&env_vars.database_url);
 
-    if env_vars.debug_mode {
-        server.mount(
-            "/debug",
-            routes![
-                routes::debug::initialize_db_with_test_data,
-                routes::debug::print_all_data,
-            ],
-        );
-    } else {
-        server.launch();
-    }
+    let addr = SyncArbiter::start(3, move || DbExecutor(db_pool.clone()));
+
+    server::new(move || {
+        App::with_state(AppState { db: addr.clone() })
+            .middleware(middleware::Logger::default())
+            .resource("/outcomes", |r| r.method(http::Method::GET).with(index))
+    })
+    .bind(format!("{}:{}", env_vars.server_ip, env_vars.server_port))
+    .unwrap()
+    .start();
+
+    let _ = sys.run();
 }
 
 fn load_env_vars() -> Result<EnvVars, VarError> {
@@ -90,41 +79,21 @@ fn load_env_vars() -> Result<EnvVars, VarError> {
     })
 }
 
-type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
+type SqlitePool = diesel::r2d2::Pool<diesel::r2d2::ConnectionManager<diesel::SqliteConnection>>;
 
 fn init_pool(db_url: &str) -> SqlitePool {
     let manager = ConnectionManager::<SqliteConnection>::new(db_url);
     Pool::new(manager).expect("Failed to create pool.")
 }
 
-// Connection request guard type: a wrapper around an r2d2 pooled connection.
-pub struct DbConn(pub PooledConnection<ConnectionManager<SqliteConnection>>);
-
-/// Attempts to retrieve a single connection from the managed database pool. If
-/// no pool is currently managed, fails with an `InternalServerError` status. If
-/// no connections are available, fails with a `ServiceUnavailable` status.
-impl<'a, 'r> FromRequest<'a, 'r> for DbConn {
-    type Error = ();
-
-    fn from_request(request: &'a request::Request<'r>) -> request::Outcome<Self, Self::Error> {
-        let pool = request.guard::<State<SqlitePool>>()?;
-        match pool.get() {
-            Ok(conn) => Outcome::Success(DbConn(conn)),
-            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
-        }
-    }
-}
-
-// For the convenience of using an &DbConn as an &SqliteConnection.
-impl Deref for DbConn {
-    type Target = SqliteConnection;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-#[get("/")]
-fn index() -> &'static str {
-    "Eventually, this will be a website."
+fn index((state): (State<AppState>)) -> FutureResponse<HttpResponse> {
+    state
+        .db
+        .send(GetOutcomes)
+        .from_err()
+        .and_then(|res| match res {
+            Ok(user) => Ok(HttpResponse::Ok().json(user)),
+            Err(_) => Ok(HttpResponse::InternalServerError().into()),
+        })
+        .responder()
 }
