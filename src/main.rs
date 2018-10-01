@@ -16,6 +16,8 @@ extern crate serde_derive;
 extern crate serde_json;
 
 pub mod models;
+pub mod db;
+pub mod debug;
 pub mod operations;
 pub mod routes;
 pub mod schema;
